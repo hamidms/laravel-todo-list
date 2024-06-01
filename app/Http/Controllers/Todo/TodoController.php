@@ -13,7 +13,13 @@ class TodoController extends Controller
      */
     public function index()
     {
-        $data = Todo::orderBy('task', 'asc')->get();
+        $max_data = 5;
+
+        if (request('search')) {
+            $data = Todo::where('task', 'like', '%'.request('search').'%')->paginate($max_data);
+        } else {
+            $data = Todo::orderBy('task', 'asc')->paginate($max_data);
+        }
         return view('todo.app', compact('data'));
     }
 
@@ -67,7 +73,21 @@ class TodoController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $request->validate([
+            'task' => 'required|min:5'
+        ], [
+            'task.required' => 'Isian task wajib diisikan',
+            'task.min' => 'Minimal isian untuk task adalah 5 karakter'
+        ]);
+
+        $data = [
+            'task' => $request->input('task'),
+            'is_done' => $request->input('is_done'),
+        ];
+
+        Todo::where('id', $id)->update($data);
+
+        return redirect()->route('todo')->with('success', 'Berhasil menyimpan perbaikan data');
     }
 
     /**
@@ -75,6 +95,8 @@ class TodoController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        Todo::where('id', $id)->delete();
+
+        return redirect()->route('todo')->with('success', 'Berhasil menghapus data');
     }
 }
